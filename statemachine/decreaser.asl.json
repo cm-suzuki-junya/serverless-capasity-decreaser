@@ -127,7 +127,7 @@
     },
     "Wait": {
       "Type": "Wait",
-      "Seconds": 600,
+      "Seconds": ${StatusCheckInterval},
       "Next": "DescribeDBInstances"
     },
     "NotTargetClusterPass": {

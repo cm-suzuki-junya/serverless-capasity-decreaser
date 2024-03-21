@@ -8,6 +8,9 @@ Description: >
 Parameters:
   NotificationReceiverAddress:
     Type: String
+  StatusCheckInterval:
+    Type: Number
+    Default: 600
 Resources:
   #---------------------------------------------
   #---- Transfer Machine
@@ -17,7 +20,8 @@ Resources:
     Properties:
       DefinitionUri: statemachine/decreaser.asl.json
       DefinitionSubstitutions:
-       SnsTopicArn: !Ref Topic
+        SnsTopicArn: !Ref Topic
+        StatusCheckInterval: !Ref StatusCheckInterval
       Role: !GetAtt DecreaserMachineRole.Arn
       Events:
         CompleteEvent:
