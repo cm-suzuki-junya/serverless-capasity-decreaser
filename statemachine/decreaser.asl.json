@@ -1,5 +1,6 @@
 {
   "Comment": "Decreace target aurora serverles min-capacity to '0.5'",
+  "TimeoutSeconds": ${StateMachineTimeout},
   "StartAt": "DescribeDBClusters",
   "States": {
     "DescribeDBClusters": {

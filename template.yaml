@@ -11,6 +11,9 @@ Parameters:
   StatusCheckInterval:
     Type: Number
     Default: 600
+  StateMachineTimeout:
+    Type: Number
+    Default: 7200
 Resources:
   #---------------------------------------------
   #---- Transfer Machine
@@ -22,6 +25,7 @@ Resources:
       DefinitionSubstitutions:
         SnsTopicArn: !Ref Topic
         StatusCheckInterval: !Ref StatusCheckInterval
+        StateMachineTimeout: !Ref StateMachineTimeout
       Role: !GetAtt DecreaserMachineRole.Arn
       Events:
         CompleteEvent:
