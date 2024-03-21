@@ -1,0 +1,124 @@
+{
+  "Comment": "Decreace target aurora serverles min-capacity to '0.5'",
+  "StartAt": "DescribeDBClusters",
+  "States": {
+    "DescribeDBClusters": {
+      "Type": "Task",
+      "Parameters": {
+        "DbClusterIdentifier.$": "$.detail.SourceIdentifier"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:rds:describeDBClusters",
+      "Next": "Choice",
+      "OutputPath": "$.DbClusters[0]"
+    },
+    "Choice": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "And": [
+            {
+              "Variable": "$.ServerlessV2ScalingConfiguration",
+              "IsPresent": true
+            },
+            {
+              "Variable": "$.ServerlessV2ScalingConfiguration.MinCapacity",
+              "NumericEquals": 0.5
+            }
+          ],
+          "Next": "HasInstance?"
+        }
+      ],
+      "Default": "NotTargetClusterPass"
+    },
+    "HasInstance?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.DBClusterMembers[0]",
+          "IsPresent": true,
+          "Next": "DescribeDBInstances"
+        }
+      ],
+      "Default": "ModifyDBCluster"
+    },
+    "DescribeDBInstances": {
+      "Type": "Task",
+      "Parameters": {
+        "Filters": [
+          {
+            "Name": "db-cluster-id",
+            "Values.$": "States.Array($.DbClusterIdentifier)"
+          }
+        ]
+      },
+      "Resource": "arn:aws:states:::aws-sdk:docdb:describeDBInstances",
+      "Next": "ConvertResultInstancesResult",
+      "ResultSelector": {
+        "DBClusterIdentifer.$": "$.DbClusterIdentifier",
+        "UniqueStatus.$": "States.ArrayUnique($.DBInstances.DBInstanceStatus)"
+      },
+      "ResultPath": "$.InstanceStatus"
+    },
+    "ConvertResultInstancesResult": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "ConvertDescribeInstance",
+        "States": {
+          "ConvertDescribeInstance": {
+            "Type": "Pass",
+            "End": true,
+            "OutputPath": "$.DBInstanceStatus"
+          }
+        }
+      },
+      "Next": "AllAvailable?",
+      "ResultSelector": {
+        "StatusLen.$": "States.ArrayLength($)",
+        "Status.$": "States.ArrayUnique($)"
+      }
+    },
+    "AllAvailable?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "And": [
+            {
+              "Variable": "$.InstanceStatus.ArrayLen",
+              "NumericEquals": 1
+            },
+            {
+              "Variable": "$.InstanceStatus.Status[0]",
+              "StringEquals": "available"
+            }
+          ],
+          "Next": "ModifyDBCluster"
+        }
+      ],
+      "Default": "Wait"
+    },
+    "ModifyDBCluster": {
+      "Type": "Task",
+      "End": true,
+      "Parameters": {
+        "DbClusterIdentifier.$": "$.DbClusterIdentifier",
+        "ServerlessV2ScalingConfiguration": {
+          "MinCapacity": 0.5,
+          "MaxCapacity.$": "$.ServerlessV2ScalingConfiguration.MaxCapacity"
+        }
+      },
+      "Resource": "arn:aws:states:::aws-sdk:rds:modifyDBCluster"
+    },
+    "Wait": {
+      "Type": "Wait",
+      "Seconds": 600,
+      "Next": "DescribeDBInstances"
+    },
+    "NotTargetClusterPass": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

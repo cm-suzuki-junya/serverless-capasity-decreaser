@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  serverless-capasity-decreaser
+
+  Sample SAM Template for serverless-capasity-decreaser
+
+Resources:
+  #---------------------------------------------
+  #---- Transfer Machine
+  #---------------------------------------------
+  TransferExecutor:
+    Type: AWS::Serverless::StateMachine 
+    Properties:
+      DefinitionUri: statemachine/decreacer.asl.json
+      # DefinitionSubstitutions:
+      #   StatusTableName: !Ref TransferStatusTabl
+      Role: !GetAtt DecreacerMachineRole.Arn
+  DecreacerMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+      Policies:
+        - PolicyName: "transfer-execute-policy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - rds:ModifyDBCluster
+                  - rds:DescribeDBClusters
+                  - rds:DescribeDBInstances
+                Resource:
+                  - '*'
