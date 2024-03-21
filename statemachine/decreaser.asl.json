@@ -25,10 +25,19 @@
               "NumericEquals": 0.5
             }
           ],
-          "Next": "HasInstance?"
+          "Next": "SNS Publish"
         }
       ],
       "Default": "NotTargetClusterPass"
+    },
+    "SNS Publish": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "Message.$": "$",
+        "TopicArn": "${SnsTopicArn}"
+      },
+      "Next": "HasInstance?"
     },
     "HasInstance?": {
       "Type": "Choice",

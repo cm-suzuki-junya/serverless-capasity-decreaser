@@ -5,6 +5,9 @@ Description: >
 
   Sample SAM Template for serverless-capasity-decreaser
 
+Parameters:
+  NotificationReceiverAddress:
+    Type: String
 Resources:
   #---------------------------------------------
   #---- Transfer Machine
@@ -13,8 +16,8 @@ Resources:
     Type: AWS::Serverless::StateMachine 
     Properties:
       DefinitionUri: statemachine/decreaser.asl.json
-      # DefinitionSubstitutions:
-      #   StatusTableName: !Ref TransferStatusTabl
+      DefinitionSubstitutions:
+       SnsTopicArn: !Ref Topic
       Role: !GetAtt DecreaserMachineRole.Arn
   DecreaserMachineRole:
     Type: AWS::IAM::Role
@@ -39,3 +42,14 @@ Resources:
                   - rds:DescribeDBInstances
                 Resource:
                   - '*'
+  Topic:
+    Type: AWS::SNS::Topic
+    Properties: 
+      TopicName: serverless-decreaser-topic
+      DisplayName: serverless-decreaser-topic
+  Subscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref Topic
+      Protocol: email
+      Endpoint: !Ref NotificationReceiverAddress
