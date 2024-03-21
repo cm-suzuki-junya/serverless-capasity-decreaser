@@ -9,14 +9,14 @@ Resources:
   #---------------------------------------------
   #---- Transfer Machine
   #---------------------------------------------
-  TransferExecutor:
+  ServerlessDecreaser:
     Type: AWS::Serverless::StateMachine 
     Properties:
-      DefinitionUri: statemachine/decreacer.asl.json
+      DefinitionUri: statemachine/decreaser.asl.json
       # DefinitionSubstitutions:
       #   StatusTableName: !Ref TransferStatusTabl
-      Role: !GetAtt DecreacerMachineRole.Arn
-  DecreacerMachineRole:
+      Role: !GetAtt DecreaserMachineRole.Arn
+  DecreaserMachineRole:
     Type: AWS::IAM::Role
     Properties:
       Path: /
@@ -28,7 +28,7 @@ Resources:
             Principal:
               Service: states.amazonaws.com
       Policies:
-        - PolicyName: "transfer-execute-policy"
+        - PolicyName: "serverless-decreaser-policy"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
