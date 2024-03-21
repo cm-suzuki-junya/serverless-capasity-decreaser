@@ -19,6 +19,20 @@ Resources:
       DefinitionSubstitutions:
        SnsTopicArn: !Ref Topic
       Role: !GetAtt DecreaserMachineRole.Arn
+      Events:
+        CompleteEvent:
+          Type: EventBridgeRule 
+          Properties:
+            Target:
+              Id: complete-receive-machine
+            Pattern:
+              source:
+                - "aws.rds"
+              detail-type:
+                - "RDS DB Cluster Event"
+              detail:
+                EventID: 
+                 - "RDS-EVENT-0170"
   DecreaserMachineRole:
     Type: AWS::IAM::Role
     Properties:
