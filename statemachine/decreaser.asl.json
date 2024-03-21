@@ -9,7 +9,11 @@
       },
       "Resource": "arn:aws:states:::aws-sdk:rds:describeDBClusters",
       "Next": "Choice",
-      "OutputPath": "$.DbClusters[0]"
+      "ResultSelector": {
+        "DbClusterIdentifier.$": "$.DbClusters[0].DbClusterIdentifier",
+        "DbClusterMemberCount.$": "States.ArrayLength($.DbClusters[0].DbClusterMembers)",
+        "ServerlessV2ScalingConfiguration.$": "$.DbClusters[0].ServerlessV2ScalingConfiguration"
+      }
     },
     "Choice": {
       "Type": "Choice",
@@ -21,8 +25,10 @@
               "IsPresent": true
             },
             {
-              "Variable": "$.ServerlessV2ScalingConfiguration.MinCapacity",
-              "NumericEquals": 0.5
+              "Not": {
+                "Variable": "$.ServerlessV2ScalingConfiguration.MinCapacity",
+                "NumericEquals": 0.5
+              }
             }
           ],
           "Next": "SNS Publish"
@@ -37,18 +43,19 @@
         "Message.$": "$",
         "TopicArn": "${SnsTopicArn}"
       },
-      "Next": "HasInstance?"
+      "Next": "HasInstance?",
+      "ResultPath": null
     },
     "HasInstance?": {
       "Type": "Choice",
       "Choices": [
         {
-          "Variable": "$.DBClusterMembers[0]",
-          "IsPresent": true,
-          "Next": "DescribeDBInstances"
+          "Variable": "$.DbClusterMemberCount",
+          "NumericEquals": 0,
+          "Next": "ModifyDBCluster"
         }
       ],
-      "Default": "ModifyDBCluster"
+      "Default": "DescribeDBInstances"
     },
     "DescribeDBInstances": {
       "Type": "Task",
@@ -62,11 +69,7 @@
       },
       "Resource": "arn:aws:states:::aws-sdk:docdb:describeDBInstances",
       "Next": "ConvertResultInstancesResult",
-      "ResultSelector": {
-        "DBClusterIdentifer.$": "$.DbClusterIdentifier",
-        "UniqueStatus.$": "States.ArrayUnique($.DBInstances.DBInstanceStatus)"
-      },
-      "ResultPath": "$.InstanceStatus"
+      "ResultPath": "$.DbInstances"
     },
     "ConvertResultInstancesResult": {
       "Type": "Map",
@@ -79,15 +82,17 @@
           "ConvertDescribeInstance": {
             "Type": "Pass",
             "End": true,
-            "OutputPath": "$.DBInstanceStatus"
+            "OutputPath": "$.DbInstanceStatus"
           }
         }
       },
       "Next": "AllAvailable?",
       "ResultSelector": {
-        "StatusLen.$": "States.ArrayLength($)",
+        "StatusLen.$": "States.ArrayLength(States.ArrayUnique($))",
         "Status.$": "States.ArrayUnique($)"
-      }
+      },
+      "ItemsPath": "$.DbInstances.DbInstances",
+      "ResultPath": "$.InstancesStatus"
     },
     "AllAvailable?": {
       "Type": "Choice",
@@ -95,11 +100,11 @@
         {
           "And": [
             {
-              "Variable": "$.InstanceStatus.ArrayLen",
+              "Variable": "$.InstancesStatus.StatusLen",
               "NumericEquals": 1
             },
             {
-              "Variable": "$.InstanceStatus.Status[0]",
+              "Variable": "$.InstancesStatus.Status[0]",
               "StringEquals": "available"
             }
           ],

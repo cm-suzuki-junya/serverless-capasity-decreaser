@@ -42,6 +42,11 @@ Resources:
                   - rds:DescribeDBInstances
                 Resource:
                   - '*'
+              - Effect: Allow
+                Action: 
+                  - sns:Publish
+                Resource:
+                  - !Ref Topic
   Topic:
     Type: AWS::SNS::Topic
     Properties: 
