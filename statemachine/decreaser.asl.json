@@ -11,9 +11,7 @@
       "Resource": "arn:aws:states:::aws-sdk:rds:describeDBClusters",
       "Next": "Choice",
       "ResultSelector": {
-        "DbClusterIdentifier.$": "$.DbClusters[0].DbClusterIdentifier",
-        "DbClusterMemberCount.$": "States.ArrayLength($.DbClusters[0].DbClusterMembers)",
-        "ServerlessV2ScalingConfiguration.$": "$.DbClusters[0].ServerlessV2ScalingConfiguration"
+        "DbCluster.$": "$.DbClusters[0]"
       }
     },
     "Choice": {
@@ -22,20 +20,29 @@
         {
           "And": [
             {
-              "Variable": "$.ServerlessV2ScalingConfiguration",
+              "Variable": "$.DbCluster.ServerlessV2ScalingConfiguration",
               "IsPresent": true
             },
             {
               "Not": {
-                "Variable": "$.ServerlessV2ScalingConfiguration.MinCapacity",
+                "Variable": "$.DbCluster.ServerlessV2ScalingConfiguration.MinCapacity",
                 "NumericEquals": 0.5
               }
             }
           ],
-          "Next": "SNS Publish"
+          "Next": "ConvertDescribeDBClusterResult"
         }
       ],
       "Default": "NotTargetClusterPass"
+    },
+    "ConvertDescribeDBClusterResult": {
+      "Type": "Pass",
+      "Next": "SNS Publish",
+      "Parameters": {
+        "DbClusterIdentifier.$": "$.DbCluster.DbClusterIdentifier",
+        "DbClusterMemberCount.$": "States.ArrayLength($.DbCluster.DbClusterMembers)",
+        "ServerlessV2ScalingConfiguration.$": "$.DbCluster.ServerlessV2ScalingConfiguration"
+      }
     },
     "SNS Publish": {
       "Type": "Task",
