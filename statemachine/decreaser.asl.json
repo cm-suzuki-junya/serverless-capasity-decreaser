@@ -106,14 +106,22 @@
       "Type": "Choice",
       "Choices": [
         {
-          "And": [
+          "Or": [
             {
               "Variable": "$.InstancesStatus.StatusLen",
-              "NumericEquals": 1
+              "NumericEquals": 0
             },
             {
-              "Variable": "$.InstancesStatus.Status[0]",
-              "StringEquals": "available"
+              "And": [
+                {
+                  "Variable": "$.InstancesStatus.StatusLen",
+                  "NumericEquals": 1
+                },
+                {
+                  "Variable": "$.InstancesStatus.Status[0]",
+                  "StringEquals": "available"
+                }
+              ]
             }
           ],
           "Next": "ModifyDBCluster"
